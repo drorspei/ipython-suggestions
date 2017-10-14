@@ -1,7 +1,7 @@
 ipython-suggestions
 ==================
 
-(i) Get suggestions on misspelled names: ::
+(i) Get suggestions on misspelled names:
 
    In [1]: my_awesome_variable = 10
 
@@ -18,12 +18,12 @@ ipython-suggestions
    In [3]: 10 * my_awesome_variable ** 3
    Out[3]: 10000
 
-(ii) Do system wide symbol searching: ::
+(ii) Do system wide symbol searching:
 
    In [1]: %findsymbol DecisionTreeClassifier
    Out[1]: (C) sklearn.tree.DecisionTreeClassifier
 
-(iii) Combine the two: ::
+(iii) Combine the two:
 
   In [1]: len(list(wallk('/')))
    NameError                                 Traceback (most recent call last)
@@ -37,10 +37,9 @@ ipython-suggestions
 Installation
 ------------
 
-Pick one among:
+Run:
 
-.. code-block:: sh
-   $ pip install git+https://github.com/drorspei/ipython-suggestions  # from Github
+   ```pip install git+https://github.com/drorspei/ipython-suggestions  # from Github```
 
 then append the output of ``python -m ipython_suggestions``
 to the output of ``ipython profile locate`` (typically

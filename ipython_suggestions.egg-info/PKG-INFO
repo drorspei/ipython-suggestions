@@ -46,7 +46,7 @@ Description: ipython-suggestions
         Installation
         ------------
         
-        Pick one among:
+        Run:
         
         .. code-block:: sh
            $ pip install git+https://github.com/drorspei/ipython-suggestions  # from Github
