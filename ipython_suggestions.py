@@ -47,6 +47,8 @@ def on_exception(ipython, etype, value, tb, tb_offset=None):
 
 
 def suggest_name(user_ns, source, value):
+    global _symbols_error, _symbols_running
+
     m = re.match("^(?:global )?name '(.*)' is not defined$", value)
     if not m:
         return
@@ -64,7 +66,12 @@ def suggest_name(user_ns, source, value):
             new_source = source[:index + 1] + word + source[index + len(attr) + 1:]
             display(SuggestionWord(word, new_source))
 
-    
+    if not _symbols_error and not _symbols_running:
+        suggestions = close_cached_symbol(attr, False)
+        if suggestions:
+            print("Found the following symbols:")
+            for suggestion in suggestions:
+                print(suggestion)
 
 
 def suggest_attr(user_ns, source, value):

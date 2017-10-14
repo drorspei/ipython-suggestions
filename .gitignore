@@ -6,6 +6,6 @@ dist/
 htmlcov/
 oprofile_data/
 .*.swp
-*.pyc
+**/*.pyc
 .coverage
 .gdb_history
