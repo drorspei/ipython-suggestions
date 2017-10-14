@@ -1,6 +1,6 @@
 """Get suggestions on misspelled names, and do system wide symbol searching.
 
-To activate, pip-install and append the output of `python -m i python_suggestions`
+To activate, pip-install and append the output of `python -m ipython_suggestions`
 to `~/.ipython/profile_default/ipython_config.py`.
 """
 
@@ -8,12 +8,16 @@ import builtins
 import os
 import sys
 import re
-from collections import defaultdict
 import traceback
 import string
 import itertools
+from collections import defaultdict
+from threading import Thread
+from inspect import isclass
 
 from IPython.core.display import display
+from IPython.core.magic import register_line_magic
+from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 
 try:
     import _ipython_suggestions_version
@@ -26,7 +30,10 @@ else:
 
 _var_name_chars = string.ascii_letters + string.digits + '_.'
 _builtins = set(dir(builtins))
+
 _symbols_cache = defaultdict(lambda: defaultdict(dict))
+_symbols_running = False
+_symbols_error = False
 
 
 def on_exception(ipython, etype, value, tb, tb_offset=None):
@@ -57,9 +64,10 @@ def suggest_name(user_ns, source, value):
             new_source = source[:index + 1] + word + source[index + len(attr) + 1:]
             display(SuggestionWord(word, new_source))
 
+    
+
 
 def suggest_attr(user_ns, source, value):
-    import pdb; pdb.set_trace()
     m = re.search("(object|module '.*') has no attribute '(.*)'$", value)
     if not m:
         return
@@ -95,22 +103,134 @@ class SuggestionWord(object):
         return '<a href="#">%s</a>' % self.word
 
 
+@register_line_magic
+@magic_arguments()
+@argument('-e', dest='exact', action='store_const', const=True, default=False,
+          help='If given the symbol search is exact. '
+               'Otherwise, the search allows two character edits.')
+@argument('symbol', type=str, help='Symbol to search for.')
+def findsymbol(arg):
+    global _symbols_running, _symbols_error
+
+    if _symbols_error:
+        print("ipython-suggestions had an error while scanning.")
+        return
+
+    if _symbols_running:
+        print("ipython-suggestions is still scanning symbols...")
+        return
+
+    args = parse_argstring(findsymbol, arg)
+
+    suggestions = close_cached_symbol(args.symbol, args.exact)
+    if suggestions:
+        print("Found the following symbols:")
+        for suggestion in suggestions:
+            print(suggestion)
+    else:
+        print("Didn't find symbol.")
+
+
 def load_ipython_extension(ipython):
     ipython.set_custom_exc((NameError, AttributeError), on_exception)
+    Thread(target=inspect_all_objs).start()
 
 
 def unload_ipython_extension(ipython):
+    global _symbols_cache, _symbols_running, _symbols_error
+    _symbols_cache = defaultdict(lambda: defaultdict(dict))
+    _symbols_running = False
+    _symbols_error = False
     ipython.set_custom_exc((), None)
+
+
+def inspect_all_objs():
+    global _symbols_cache, _symbols_running, _symbols_error
+
+    _symbols_running = True
+    try:
+        visited = set()
+        defclass = re.compile(r'(class|def) ([_A-z][_A-z0-9]*)[\(:]')
+        variable = re.compile(r'([A-z][_A-z0-9]+)\s=')
+        objs = defaultdict(dict)
+
+        rootmodules = list(sys.builtin_module_names)
+        for name in rootmodules:
+            objs[name][('module', name)] = ('builtin', 0)
+            m = __import__(name)
+            for attr in dir(m):
+                a = getattr(m, attr)
+                if isclass(a):
+                    objs[attr][('class', name)] = ('builtin', 0)
+                elif callable(a):
+                    objs[attr][('def', name)] = ('builtin', 0)
+
+        for path in sys.path:
+            if path == '':
+                path = '.'
+
+            if os.path.isdir(path):
+                for root, dirs, nondirs in os.walk(path):
+                    if '-' in root[len(path) + 1:] or root in visited:
+                        dirs[:] = []
+                        continue
+
+                    visited.add(root)
+
+                    for name in nondirs:
+                        if name.endswith('.py'):
+                            filepath = os.path.join(root, name)
+
+                            if name == '__init__.py':
+                                name = root[len(path) + 1:].split('/')[-1]
+                                modulepath = '.'.join(root[len(path) + 1:].split('/')[:-1])
+                            else:
+                                name = name[:-3]
+                                modulepath = root[len(path) + 1:].replace('/', '.')
+
+                            if modulepath.endswith('.'):
+                                modulepath = modulepath[:-1]
+
+                            if ('module', modulepath) not in objs[name]:
+                                objs[name][('module', modulepath)] = (filepath, 0)
+
+                                try:
+                                    with open(filepath, 'r') as f:
+                                        for i, line in enumerate(f):
+                                            if modulepath:
+                                                fullpath = '%s.%s' % (modulepath, name)
+                                            else:
+                                                fullpath = name
+
+                                            m = defclass.match(line)
+                                            if m:
+                                                t, sym = m.groups()
+                                                objs[sym][(t, fullpath)] = (filepath, i)
+                                            else:
+                                                m = variable.match(line)
+                                                if m:
+                                                    objs[m.group(1)][('var', fullpath)] = (
+                                                        filepath, i)
+                                except:
+                                    pass
+
+        for word, value in objs.items():
+            _symbols_cache[len(word)][word] = value
+    except:
+        _symbols_error = True
+    finally:
+        _symbols_running = False
 
 
 ###############################################################################
 
 
 def close_deletions(word, all_words):
-    for i in range(len(word)):
-        w = word[:i] + word[i+1:]
-        if w in all_words:
-            yield w
+    if len(word) > 1:
+        for i in range(len(word)):
+            w = word[:i] + word[i+1:]
+            if w in all_words:
+                yield w
 
 
 def close_transposes(word, all_words):
@@ -141,19 +261,50 @@ def close_words(word, all_words):
                            close_substitutions(word, all_words))
 
 
-def close_cached_symbol(word):
-    return itertools.chain(close_deletions(word, _symbols_cache[len(word) - 1]),
-                           close_transposes(word, _symbols_cache[len(word)]),
-                           close_insertions(word, _symbols_cache[len(word) + 1]),
-                           close_substitutions(word, _symbols_cache[len(word)]))
-
-
 def unique(it):
     seen = set()
     for w in it:
         if w not in seen:
             seen.add(w)
             yield w
+
+
+def close_cached_symbol(word, exact):
+    suggestions = []
+
+    if not exact and len(word) >= 3:
+        words = unique(itertools.chain(close_deletions(word, _symbols_cache[len(word) - 1]),
+                                       close_transposes(word, _symbols_cache[len(word)]),
+                                       close_insertions(word, _symbols_cache[len(word) + 1]),
+                                       close_substitutions(word, _symbols_cache[len(word)])))
+    elif word in _symbols_cache[len(word)]:
+        words = [word]
+    else:
+        words = []
+
+    for word in words:
+        for (t, modulepath), (filepath, linenum) in _symbols_cache[len(word)][word].items():
+            if t == 'module':
+                if filepath not in ['builtin', '']:
+                    tag = 'M'
+                else:
+                    tag = 'BM'
+
+                if modulepath == '' or filepath == 'builtin':
+                    suggestions.append("(%s) import %s" % (tag, word))
+                else:
+                    suggestions.append("(%s) from %s import %s" % (tag, modulepath, word))
+            else:
+                if t == 'class':
+                    tag = 'C'
+                elif t == 'def':
+                    tag = 'F'
+                else:  # t == 'var'
+                    tag = 'V'
+
+                suggestions.append("(%s) from %s import %s" % (tag, modulepath, word))
+
+    return sorted(suggestions, key=lambda txt: txt[4:])
 
 ###############################################################################
 
