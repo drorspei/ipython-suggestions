@@ -1,0 +1,11 @@
+MANIFEST.in
+README.rst
+_ipython_suggestions_version.py
+ipython_suggestions.py
+setup.cfg
+versioneer.py
+ipython_suggestions.egg-info/PKG-INFO
+ipython_suggestions.egg-info/SOURCES.txt
+ipython_suggestions.egg-info/dependency_links.txt
+ipython_suggestions.egg-info/requires.txt
+ipython_suggestions.egg-info/top_level.txt
