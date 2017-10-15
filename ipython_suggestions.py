@@ -15,6 +15,7 @@ from collections import defaultdict
 from threading import Thread
 from inspect import isclass
 
+from IPython import get_ipython
 from IPython.core.display import display
 from IPython.core.magic import register_line_magic
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
@@ -34,6 +35,7 @@ _builtins = set(dir(builtins))
 _symbols_cache = defaultdict(lambda: defaultdict(dict))
 _symbols_running = False
 _symbols_error = False
+_symbols_last = None
 
 
 def on_exception(ipython, etype, value, tb, tb_offset=None):
@@ -47,7 +49,7 @@ def on_exception(ipython, etype, value, tb, tb_offset=None):
 
 
 def suggest_name(user_ns, source, value):
-    global _symbols_error, _symbols_running
+    global _symbols_error, _symbols_running, _symbols_last
 
     m = re.match("^(?:global )?name '(.*)' is not defined$", value)
     if not m:
@@ -60,21 +62,29 @@ def suggest_name(user_ns, source, value):
 
     suggestions = list(unique(itertools.chain(close_words(attr, user_ns),
                                               close_words(attr, _builtins))))
+
+    symbols_last = []
+
     if suggestions:
         print("Did you mean:")
-        for word in suggestions:
-            new_source = source[:index + 1] + word + source[index + len(attr) + 1:]
-            display(SuggestionWord(word, new_source))
+        for i, word in enumerate(suggestions):
+            symbols_last.append(('fill', source[:index] + word + source[index + len(attr):]))
+            print(i, word)
 
     if not _symbols_error and not _symbols_running:
         suggestions = close_cached_symbol(attr, False)
         if suggestions:
             print("Found the following symbols:")
-            for suggestion in suggestions:
-                print(suggestion)
+            for i, (suggestion, code) in enumerate(suggestions, len(symbols_last)):
+                print(i, suggestion)
+                symbols_last.append(('exec', code))
+
+    if symbols_last:
+        _symbols_last = symbols_last
 
 
 def suggest_attr(user_ns, source, value):
+    global _symbols_last
     m = re.search("(object|module '.*') has no attribute '(.*)'$", value)
     if not m:
         return
@@ -92,22 +102,11 @@ def suggest_attr(user_ns, source, value):
     suggestions = list(unique(itertools.chain(close_words(attr, lst),
                                               close_words(attr, _builtins))))
     if suggestions:
+        _symbols_last = []
         print("Did you mean:")
-        for word in suggestions:
-            new_source = source[:index + 1] + word + source[index + len(attr) + 1:]
-            display(SuggestionWord(word, new_source))
-
-
-class SuggestionWord(object):
-    def __init__(self, word, source):
-        self.word = word
-        self.source = source
-
-    def __repr__(self):
-        return self.word
-
-    def _repr_html_(self):
-        return '<a href="#">%s</a>' % self.word
+        for i, word in enumerate(suggestions):
+            _symbols_last.append(('fill', source[:index + 1] + word + source[index + len(attr) + 1:]))
+            print(i, word)
 
 
 @register_line_magic
@@ -117,7 +116,7 @@ class SuggestionWord(object):
                'Otherwise, the search allows two character edits.')
 @argument('symbol', type=str, help='Symbol to search for.')
 def findsymbol(arg):
-    global _symbols_running, _symbols_error
+    global _symbols_running, _symbols_error, _symbols_last
 
     if _symbols_error:
         print("ipython-suggestions had an error while scanning.")
@@ -131,11 +130,27 @@ def findsymbol(arg):
 
     suggestions = close_cached_symbol(args.symbol, args.exact)
     if suggestions:
+        _symbols_last = []
         print("Found the following symbols:")
-        for suggestion in suggestions:
-            print(suggestion)
+        for i, (suggestion, code) in enumerate(suggestions):
+            print(i, suggestion)
+            _symbols_last.append(('exec', code))
     else:
         print("Didn't find symbol.")
+
+
+@register_line_magic
+@magic_arguments()
+@argument('suggestion_index', type=int, help='Index of suggestion to execute.')
+def suggestion(arg):
+    global _symbols_last
+    args = parse_argstring(suggestion, arg)
+    method, line = _symbols_last[args.suggestion_index]
+    if method == 'exec':
+        exec(line, get_ipython().user_ns)
+        print(line)
+    elif method == 'fill':
+        get_ipython().set_next_input(line)
 
 
 def load_ipython_extension(ipython):
@@ -144,10 +159,11 @@ def load_ipython_extension(ipython):
 
 
 def unload_ipython_extension(ipython):
-    global _symbols_cache, _symbols_running, _symbols_error
+    global _symbols_cache, _symbols_running, _symbols_error, _symbols_last
     _symbols_cache = defaultdict(lambda: defaultdict(dict))
     _symbols_running = False
     _symbols_error = False
+    _symbols_last = None
     ipython.set_custom_exc((), None)
 
 
@@ -298,9 +314,11 @@ def close_cached_symbol(word, exact):
                     tag = 'BM'
 
                 if modulepath == '' or filepath == 'builtin':
-                    suggestions.append("(%s) import %s" % (tag, word))
+                    suggestions.append(("(%s) import %s" % (tag, word),
+                                        "import %s" % word))
                 else:
-                    suggestions.append("(%s) from %s import %s" % (tag, modulepath, word))
+                    suggestions.append(("(%s) from %s import %s" % (tag, modulepath, word),
+                                        "from %s import %s" % (modulepath, word)))
             else:
                 if t == 'class':
                     tag = 'C'
@@ -309,9 +327,10 @@ def close_cached_symbol(word, exact):
                 else:  # t == 'var'
                     tag = 'V'
 
-                suggestions.append("(%s) from %s import %s" % (tag, modulepath, word))
+                suggestions.append(("(%s) from %s import %s" % (tag, modulepath, word),
+                                    "from %s import %s" % (modulepath, word)))
 
-    return sorted(suggestions, key=lambda txt: txt[4:])
+    return sorted(suggestions, key=lambda key: key[1])
 
 ###############################################################################
 
