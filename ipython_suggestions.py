@@ -40,7 +40,8 @@ _symbols_last = None
 
 def on_exception(ipython, etype, value, tb, tb_offset=None):
     ipython.showtraceback()
-    source = traceback.extract_tb(tb)[-1].line
+    import pdb; pdb.set_trace()
+    source = traceback.extract_tb(tb)[-1][-1]
 
     if etype == NameError:
         suggest_name(ipython.user_ns, source, str(value))

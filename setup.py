@@ -19,6 +19,6 @@ if __name__ == "__main__":
             "Programming Language :: Python :: 3",
         ],
         py_modules=["ipython_suggestions"],
-        python_requires=">=3",
-        install_requires=["ipython>=4.0"],
+        python_requires=">=2.7.10",
+        install_requires=["ipython>=4.0", 'future;python_version<"3"'],
     )
