@@ -54,8 +54,8 @@ def on_exception(ipython, etype, value, tb, tb_offset=None):
 def suggest_prefix(self, event):
     global _symbols_cache, _symbols_sorted
     ret = []
-    if _symbols_sorted is not None:
-        key = event.symbol.split('...')[0]
+    key = event.symbol.split('...')[0]
+    if _symbols_sorted is not None and key:
         i = bisect.bisect_left(_symbols_sorted, key)
         j = bisect.bisect_right(_symbols_sorted, key[:-1] + chr(ord(key[-1])+1))
         for word in _symbols_sorted[i:j]:
@@ -163,6 +163,7 @@ def findsymbol(arg):
         else:
             print(line)
             exec(line, get_ipython().user_ns)
+        return
 
     suggestions = close_cached_symbol(args.symbol, args.exact)
     if suggestions:
