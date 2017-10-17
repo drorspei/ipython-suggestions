@@ -1,3 +1,4 @@
+from __future__ import print_function
 """Get suggestions on misspelled names, and do system wide symbol searching.
 
 To activate, pip-install and append the output of `python -m ipython_suggestions`
@@ -40,7 +41,6 @@ _symbols_last = None
 
 def on_exception(ipython, etype, value, tb, tb_offset=None):
     ipython.showtraceback()
-    import pdb; pdb.set_trace()
     source = traceback.extract_tb(tb)[-1][-1]
 
     if etype == NameError:
