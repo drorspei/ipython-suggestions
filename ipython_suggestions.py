@@ -1,10 +1,9 @@
-from __future__ import print_function
 """Get suggestions on misspelled names, and do system wide symbol searching.
 
 To activate, pip-install and append the output of `python -m ipython_suggestions`
 to `~/.ipython/profile_default/ipython_config.py`.
 """
-
+from __future__ import print_function
 import builtins
 import os
 import sys
@@ -12,6 +11,8 @@ import re
 import traceback
 import string
 import itertools
+import bisect
+import time
 from collections import defaultdict
 from threading import Thread
 from inspect import isclass
@@ -34,6 +35,7 @@ _var_name_chars = string.ascii_letters + string.digits + '_.'
 _builtins = set(dir(builtins))
 
 _symbols_cache = defaultdict(lambda: defaultdict(dict))
+_symbols_sorted = None
 _symbols_running = False
 _symbols_error = False
 _symbols_last = None
@@ -47,6 +49,19 @@ def on_exception(ipython, etype, value, tb, tb_offset=None):
         suggest_name(ipython.user_ns, source, str(value))
     elif etype == AttributeError:
         suggest_attr(ipython.user_ns, source, str(value))
+
+
+def suggest_prefix(self, event):
+    global _symbols_cache, _symbols_sorted
+    ret = []
+    if _symbols_sorted is not None:
+        key = event.symbol.split('...')[0]
+        i = bisect.bisect_left(_symbols_sorted, key)
+        j = bisect.bisect_right(_symbols_sorted, key[:-1] + chr(ord(key[-1])+1))
+        for word in _symbols_sorted[i:j]:
+            for _, modulepath in _symbols_cache[len(word)][word]:
+                ret.append('%s...%s' % (word, modulepath))
+    return sorted(ret)
 
 
 def suggest_name(user_ns, source, value):
@@ -106,12 +121,14 @@ def suggest_attr(user_ns, source, value):
         _symbols_last = []
         print("Did you mean:")
         for i, word in enumerate(suggestions):
-            _symbols_last.append(('fill', source[:index + 1] + word + source[index + len(attr) + 1:]))
+            newword = source[:index + 1] + word + source[index + len(attr) + 1:]
+            _symbols_last.append(('fill', newword))
             print(i, word)
 
 
 @register_line_magic
 @magic_arguments()
+@argument('-as', dest='as_', type=str, default=None)
 @argument('-e', dest='exact', action='store_const', const=True, default=False,
           help='If given the symbol search is exact. '
                'Otherwise, the search allows two character edits.')
@@ -129,13 +146,31 @@ def findsymbol(arg):
 
     args = parse_argstring(findsymbol, arg)
 
+    if args.as_ is not None:
+        as_ = ' as %s' % args.as_
+    else:
+        as_ = ''
+
+    if '...' in args.symbol:
+        try:
+            name, modulepath = args.symbol.split('...')
+            if modulepath == '':
+                line = 'import %s%s' % (name, as_)
+            else:
+                line = 'from %s import %s%s' % (modulepath, name, as_)
+        except:
+            print("An error occured when trying to import symbol.")
+        else:
+            print(line)
+            exec(line, get_ipython().user_ns)
+
     suggestions = close_cached_symbol(args.symbol, args.exact)
     if suggestions:
         _symbols_last = []
         print("Found the following symbols:")
         for i, (suggestion, code) in enumerate(suggestions):
-            print(i, suggestion)
-            _symbols_last.append(('exec', code))
+            print(i, suggestion + as_)
+            _symbols_last.append(('exec', code + as_))
     else:
         print("Didn't find symbol.")
 
@@ -148,20 +183,22 @@ def suggestion(arg):
     args = parse_argstring(suggestion, arg)
     method, line = _symbols_last[args.suggestion_index]
     if method == 'exec':
-        exec(line, get_ipython().user_ns)
         print(line)
+        exec(line, get_ipython().user_ns)
     elif method == 'fill':
         get_ipython().set_next_input(line)
 
 
 def load_ipython_extension(ipython):
     ipython.set_custom_exc((NameError, AttributeError), on_exception)
+    ipython.set_hook('complete_command', suggest_prefix, str_key='%findsymbol')
     Thread(target=inspect_all_objs).start()
 
 
 def unload_ipython_extension(ipython):
     global _symbols_cache, _symbols_running, _symbols_error, _symbols_last
     _symbols_cache = defaultdict(lambda: defaultdict(dict))
+    _symbols_sorted = None
     _symbols_running = False
     _symbols_error = False
     _symbols_last = None
@@ -169,9 +206,10 @@ def unload_ipython_extension(ipython):
 
 
 def inspect_all_objs():
-    global _symbols_cache, _symbols_running, _symbols_error
+    global _symbols_cache, _symbols_sorted, _symbols_running, _symbols_error
 
     _symbols_running = True
+
     try:
         visited = set()
         defclass = re.compile(r'(class|def) ([_A-z][_A-z0-9]*)[\(:]')
@@ -240,6 +278,8 @@ def inspect_all_objs():
 
         for word, value in objs.items():
             _symbols_cache[len(word)][word] = value
+
+        _symbols_sorted = sorted(sum(map(list, _symbols_cache.values()), []))
     except:
         _symbols_error = True
     finally:

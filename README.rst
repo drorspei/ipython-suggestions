@@ -1,7 +1,45 @@
 ipython-suggestions
 ==================
 
-(i) Get suggestions on misspelled names:
+(i) Number one feature: system wide symbol searching!
+  When ipython is loaded, suggestions module will scan your python paths for
+  symbols and will create a cache. On the author's old 2008 computer (this
+  readme is from 2017), 50000 symbols load in 10 seconds.
+  But then you get a very easy way to import any symbol, without typing or
+  remembering the entrine import path.
+  First example:
+
+   In [1]: %findsymbol DecisionTreeClassifi  # two typos here on purpose
+   Out[1]: 0 (C) from sklearn.tree import DecisionTreeClassifier
+   
+   In [2]: %suggestion 0
+   from sklearn.tree import DecisionTreeClassifier  # it's now imported!
+
+  %findsymbol searching string up to two character edits (deletion, substitution, transpose 
+  and insertion).
+
+  Second example:
+
+    In [1]: %findsymbol pypl  # now hit tab!
+    [this completes to:]
+    In [1]: %findsymbol pyplot...matplotlib  # press enter now.
+    from matplotlib import pyplot
+    [pyplot is now imported]
+
+  Even better example:
+
+    In [1]: %findsymbol pypl  # now hit tab!
+    [this completes to:]
+    In [1]: %findsymbol pyplot...matplotlib -as plt
+    from matplotlib import pyplot as plt
+    [pyplot is now imported as plt]
+
+  The completions offered by pressing tab in a %findsymbol line are all the
+  symbols that begin with what you wrote. Note that this is case-sensitive.
+
+  This also works in jupyter :)
+
+(ii) Get suggestions on misspelled names:
 
    In [1]: my_awesome_variable = 10
 
@@ -13,26 +51,14 @@ ipython-suggestions
 
    NameError: name 'my_awsome_variable' is not defined
    Did you mean:
-   my_awesome_variable
+   0 my_awesome_variable
 
-   In [3]: 10 * my_awesome_variable ** 3
-   Out[3]: 10000
-
-(ii) Do system wide symbol searching:
-
-   In [1]: %findsymbol DecisionTreeClassifier
-   Out[1]: (C) sklearn.tree.DecisionTreeClassifier
-
-(iii) Combine the two:
-
-  In [1]: len(list(wallk('/')))
-   NameError                                 Traceback (most recent call last)
-   <ipython-input-6-666d043cbf71> in <module>()
-   ----> 1 len(list(wallk('/')))
-
-   NameError: name 'wallk' is not defined
-   Did you mean to import:
-   os.walk
+   In [3]: %suggestion 0
+   [ipython automatically fills the next line]
+   In [4]: 10 * my_awesome_variable ** 3
+   
+   Auto-filling of corrected code currently only works inside the shell and not
+   in jupyter.
 
 Installation
 ------------
