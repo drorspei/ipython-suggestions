@@ -15,7 +15,7 @@ ipython-suggestions
    In [2]: %suggestion 0
    from sklearn.tree import DecisionTreeClassifier  # it's now imported!
 
-  %findsymbol searching string up to two character edits (deletion, substitution, transpose 
+  %findsymbol searches string up to two character edits (deletion, substitution, transpose 
   and insertion).
 
   Second example:
@@ -30,6 +30,8 @@ ipython-suggestions
 
     In [1]: %findsymbol pypl  # now hit tab!
     [this completes to:]
+    In [1]: %findsymbol pyplot...matplotlib
+    [now add -as parameter]
     In [1]: %findsymbol pyplot...matplotlib -as plt
     from matplotlib import pyplot as plt
     [pyplot is now imported as plt]

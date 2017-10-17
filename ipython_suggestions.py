@@ -192,7 +192,9 @@ def suggestion(arg):
 def load_ipython_extension(ipython):
     ipython.set_custom_exc((NameError, AttributeError), on_exception)
     ipython.set_hook('complete_command', suggest_prefix, str_key='%findsymbol')
-    Thread(target=inspect_all_objs).start()
+    thread = Thread(target=inspect_all_objs)
+    thread.daemon = True
+    thread.start()
 
 
 def unload_ipython_extension(ipython):
