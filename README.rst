@@ -69,6 +69,6 @@ Run:
 
    pip install git+https://github.com/drorspei/ipython-suggestions  # from Github
 
-then append the output of ``python -m ipython_suggestions``
+then append the output of ``ipython -m ipython_suggestions``
 to the output of ``ipython profile locate`` (typically
 ``~/.ipython/profile_default/ipython_config.py``).

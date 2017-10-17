@@ -1,6 +1,6 @@
 """Get suggestions on misspelled names, and do system wide symbol searching.
 
-To activate, pip-install and append the output of `python -m ipython_suggestions`
+To activate, pip-install and append the output of `ipython -m ipython_suggestions`
 to `~/.ipython/profile_default/ipython_config.py`.
 """
 from __future__ import print_function
