@@ -1,4 +1,4 @@
-ipython-suggestions
+IPython Extension: ipython-suggestions
 ==================
 
 (i) Number one feature: system wide symbol searching!
