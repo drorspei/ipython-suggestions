@@ -9,7 +9,7 @@ ipython-suggestions
   remembering the entrine import path.
   First example:
 
-   In [1]: %findsymbol DecisionTreeClassifi  # two typos here on purpose
+   In [1]: %findsymbol DecisionTreeClasifir  # two typos here on purpose
    Out[1]: 0 (C) from sklearn.tree import DecisionTreeClassifier
    
    In [2]: %suggestion 0
