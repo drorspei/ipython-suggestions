@@ -126,68 +126,71 @@ def suggest_attr(user_ns, source, value):
             print(i, word)
 
 
-@register_line_magic
-@magic_arguments()
-@argument('-as', dest='as_', type=str, default=None)
-@argument('-e', dest='exact', action='store_const', const=True, default=False,
-          help='If given the symbol search is exact. '
-               'Otherwise, the search allows two character edits.')
-@argument('symbol', type=str, help='Symbol to search for.')
-def findsymbol(arg):
-    global _symbols_running, _symbols_error, _symbols_last
+# Magic registration only works in ipython, and we don't
+# need it if we're in "__main__".
+if __name__ != "__main__":
+    @register_line_magic
+    @magic_arguments()
+    @argument('-as', dest='as_', type=str, default=None)
+    @argument('-e', dest='exact', action='store_const', const=True, default=False,
+            help='If given the symbol search is exact. '
+                'Otherwise, the search allows two character edits.')
+    @argument('symbol', type=str, help='Symbol to search for.')
+    def findsymbol(arg):
+        global _symbols_running, _symbols_error, _symbols_last
 
-    if _symbols_error:
-        print("ipython-suggestions had an error while scanning.")
-        return
+        if _symbols_error:
+            print("ipython-suggestions had an error while scanning.")
+            return
 
-    if _symbols_running:
-        print("ipython-suggestions is still scanning symbols...")
-        return
+        if _symbols_running:
+            print("ipython-suggestions is still scanning symbols...")
+            return
 
-    args = parse_argstring(findsymbol, arg)
+        args = parse_argstring(findsymbol, arg)
 
-    if args.as_ is not None:
-        as_ = ' as %s' % args.as_
-    else:
-        as_ = ''
-
-    if '...' in args.symbol:
-        try:
-            name, modulepath = args.symbol.split('...')
-            if modulepath == '':
-                line = 'import %s%s' % (name, as_)
-            else:
-                line = 'from %s import %s%s' % (modulepath, name, as_)
-        except:
-            print("An error occured when trying to import symbol.")
+        if args.as_ is not None:
+            as_ = ' as %s' % args.as_
         else:
+            as_ = ''
+
+        if '...' in args.symbol:
+            try:
+                name, modulepath = args.symbol.split('...')
+                if modulepath == '':
+                    line = 'import %s%s' % (name, as_)
+                else:
+                    line = 'from %s import %s%s' % (modulepath, name, as_)
+            except:
+                print("An error occured when trying to import symbol.")
+            else:
+                print(line)
+                exec(line, get_ipython().user_ns)
+            return
+
+        suggestions = close_cached_symbol(args.symbol, args.exact)
+        if suggestions:
+            _symbols_last = []
+            print("Found the following symbols:")
+            for i, (suggestion, code) in enumerate(suggestions):
+                print(i, suggestion + as_)
+                _symbols_last.append(('exec', code + as_))
+        else:
+            print("Didn't find symbol.")
+
+
+    @register_line_magic
+    @magic_arguments()
+    @argument('suggestion_index', type=int, help='Index of suggestion to execute.')
+    def suggestion(arg):
+        global _symbols_last
+        args = parse_argstring(suggestion, arg)
+        method, line = _symbols_last[args.suggestion_index]
+        if method == 'exec':
             print(line)
             exec(line, get_ipython().user_ns)
-        return
-
-    suggestions = close_cached_symbol(args.symbol, args.exact)
-    if suggestions:
-        _symbols_last = []
-        print("Found the following symbols:")
-        for i, (suggestion, code) in enumerate(suggestions):
-            print(i, suggestion + as_)
-            _symbols_last.append(('exec', code + as_))
-    else:
-        print("Didn't find symbol.")
-
-
-@register_line_magic
-@magic_arguments()
-@argument('suggestion_index', type=int, help='Index of suggestion to execute.')
-def suggestion(arg):
-    global _symbols_last
-    args = parse_argstring(suggestion, arg)
-    method, line = _symbols_last[args.suggestion_index]
-    if method == 'exec':
-        print(line)
-        exec(line, get_ipython().user_ns)
-    elif method == 'fill':
-        get_ipython().set_next_input(line)
+        elif method == 'fill':
+            get_ipython().set_next_input(line)
 
 
 def load_ipython_extension(ipython):
