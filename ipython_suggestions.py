@@ -16,7 +16,9 @@ import time
 from collections import defaultdict
 from threading import Thread
 from inspect import isclass
+import token
 
+from IPython.utils import PyColorize
 from IPython import get_ipython
 from IPython.core.display import display
 from IPython.core.magic import register_line_magic
@@ -164,8 +166,17 @@ if __name__ != "__main__":
             except:
                 print("An error occured when trying to import symbol.")
             else:
-                print(line)
-                exec(line, get_ipython().user_ns)
+                shell = get_ipython()
+
+                try:
+                    sys.stdout._raw = True
+                except AttributeError:
+                    pass
+                cs = PyColorize.Parser().color_table[shell.colors].colors
+                print("{}Suggestions:{} {}".format(cs[token.NUMBER], cs["normal"], line))
+
+                shell.execution_count += 1
+                shell.run_cell(line, store_history=True)
             return
 
         suggestions = close_cached_symbol(args.symbol, args.exact)
@@ -185,12 +196,24 @@ if __name__ != "__main__":
     def suggestion(arg):
         global _symbols_last
         args = parse_argstring(suggestion, arg)
-        method, line = _symbols_last[args.suggestion_index]
-        if method == 'exec':
-            print(line)
-            exec(line, get_ipython().user_ns)
-        elif method == 'fill':
-            get_ipython().set_next_input(line)
+        if -len(_symbols_last) < args.suggestion_index < len(_symbols_last):
+            method, line = _symbols_last[args.suggestion_index]
+            if method == 'exec':
+                shell = get_ipython()
+                
+                try:
+                    sys.stdout._raw = True
+                except AttributeError:
+                    pass
+                cs = PyColorize.Parser().color_table[shell.colors].colors
+                print("{}Suggestions:{} {}".format(cs[token.NUMBER], cs["normal"], line))
+
+                shell.execution_count += 1
+                shell.run_cell(line, store_history=True)
+            elif method == 'fill':
+                get_ipython().set_next_input(line)
+        else:
+            print("Invalid suggestion index.")
 
 
 def load_ipython_extension(ipython):
