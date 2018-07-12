@@ -22,6 +22,8 @@ from IPython.core.display import display
 from IPython.core.magic import register_line_magic
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 
+from super_greedy_complete import super_greedy_complete
+
 try:
     import _ipython_suggestions_version
 except ImportError:
@@ -196,6 +198,7 @@ if __name__ != "__main__":
 def load_ipython_extension(ipython):
     ipython.set_custom_exc((NameError, AttributeError), on_exception)
     ipython.set_hook('complete_command', suggest_prefix, str_key='%findsymbol')
+    ipython.set_hook('complete_command', super_greedy_complete, re_key='.*')
     thread = Thread(target=inspect_all_objs)
     thread.daemon = True
     thread.start()
