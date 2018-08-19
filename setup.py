@@ -18,7 +18,7 @@ if __name__ == "__main__":
             "License :: OSI Approved :: MIT License",
             "Programming Language :: Python :: 3",
         ],
-        py_modules=["ipython_suggestions"],
+        py_modules=["ipython_suggestions", "super_greedy_complete"],
         python_requires=">=2.7.10",
         install_requires=["ipython>=4.0", 'future;python_version<"3"'],
     )
