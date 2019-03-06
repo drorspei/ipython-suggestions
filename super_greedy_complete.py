@@ -796,6 +796,7 @@ def super_greedy_complete(self, event, evalfuncs=True):
 
     # Dictionary key.
     if hp.is_in_dict() and evalfuncs:
+        no_quote = event.line[i:i+1] and event.line[i:i+1] in '"\''
         while i and curline[i - 1] in ID_CHARS + '"' + "'":
             i -= 1
         if curline[i - 1:i] == "[" or curline[i - 2:i] == "[u":
@@ -811,6 +812,8 @@ def super_greedy_complete(self, event, evalfuncs=True):
                 try:
                     r = repr(key)
                     if not r.startswith('<'):
+                        if no_quote and r[-1] in '"\'':
+                            r = r[:-1]
                         keys.add(r)
                 except Exception:
                     pass
