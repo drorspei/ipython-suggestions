@@ -836,7 +836,12 @@ def super_greedy_complete(self, event, evalfuncs=True):
                 cmp_ = cmp
             except NameError:
                 def cmp_(x, y): return (x > y) - (x < y)
-            completions = sorted(set(bigl), cmp=lambda x, y: cmp_(normcase(x), normcase(y)))
+            try:
+                completions = sorted(set(bigl), cmp=lambda x, y: cmp_(normcase(x), normcase(y)))
+            except TypeError:
+                # python 3...
+                import functools
+                completions = sorted(set(bigl), key=functools.cmp_to_key(lambda x, y: cmp_(normcase(x), normcase(y))))
         except OSError:
             pass
     # Name or attribute.
