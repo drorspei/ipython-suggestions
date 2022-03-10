@@ -1,5 +1,4 @@
-IPython Extension: ipython-suggestions
-==================
+# IPython Extension: ipython-suggestions
 
 (i) Number one feature: system wide symbol searching!
   When ipython is loaded, suggestions module will scan your python paths for
@@ -62,8 +61,7 @@ IPython Extension: ipython-suggestions
    Auto-filling of corrected code currently only works inside the shell and not
    in jupyter.
 
-Installation
-------------
+# Installation
 
 Run:
 

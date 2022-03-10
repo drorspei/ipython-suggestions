@@ -1,14 +1,13 @@
 from setuptools import setup
-import versioneer
 
 
 if __name__ == "__main__":
     setup(
         name="ipython-suggestions",
-        version=versioneer.get_version(),
-        cmdclass=versioneer.get_cmdclass(),
+        version="1.0.0",
         description="Get suggestions on misspelled names, and do system wide symbol searching.",
-        long_description=open("README.rst").read(),
+        long_description=open("README.md").read(),
+        long_description_content_type='text/markdown',
         author="Dror Speiser",
         url="https://github.com/drorspei/ipython-suggestions",
         license="MIT",
