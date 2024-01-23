@@ -10,11 +10,11 @@
 
    In [1]: %findsymbol DecisionTreeClasifir  # two typos here on purpose
    Out[1]: 0 (C) from sklearn.tree import DecisionTreeClassifier
-   
+
    In [2]: %suggestion 0
    from sklearn.tree import DecisionTreeClassifier  # it's now imported!
 
-  %findsymbol searches string up to two character edits (deletion, substitution, transpose 
+  %findsymbol searches string up to two character edits (deletion, substitution, transpose
   and insertion).
 
   Second example:
@@ -57,15 +57,23 @@
    In [3]: %suggestion 0
    [ipython automatically fills the next line]
    In [4]: 10 * my_awesome_variable ** 3
-   
+
    Auto-filling of corrected code currently only works inside the shell and not
    in jupyter.
 
 # Installation
 
-Run:
+From pypi:
 
-   pip install git+https://github.com/drorspei/ipython-suggestions  # from Github
+```shell
+pip install ipython-suggestions
+```
+
+Or directly from source:
+
+```shell
+pip install git+https://github.com/drorspei/ipython-suggestions
+```
 
 then append the output of ``ipython -m ipython_suggestions``
 to the output of ``ipython profile locate`` (typically
