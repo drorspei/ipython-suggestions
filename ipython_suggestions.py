@@ -21,7 +21,7 @@ import token
 
 from IPython.utils import PyColorize
 from IPython import get_ipython
-from IPython.core.display import display
+from IPython.display import display
 from IPython.core.magic import register_line_magic
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 
