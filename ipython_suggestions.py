@@ -17,11 +17,10 @@ import time
 from collections import defaultdict
 from threading import Thread
 from inspect import isclass
-import token
+from pygments import Token
 
 from IPython.utils import PyColorize
 from IPython import get_ipython
-from IPython.display import display
 from IPython.core.magic import register_line_magic
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 
@@ -179,7 +178,7 @@ if __name__ != "__main__":
                     sys.stdout._raw = True
                 except AttributeError:
                     pass
-                cs = PyColorize.Parser().color_table[shell.colors].colors
+                cs = PyColorize.theme_table[shell.colors]
                 print(
                     "{}Suggestions:{} {}".format(cs[token.NUMBER], cs["normal"], line)
                 )
@@ -213,10 +212,14 @@ if __name__ != "__main__":
                     sys.stdout._raw = True
                 except AttributeError:
                     pass
-                cs = PyColorize.Parser().color_table[shell.colors].colors
                 print(
-                    "{}Suggestions:{} {}".format(cs[token.NUMBER], cs["normal"], line)
+                    PyColorize.theme_table[shell.colors].format(
+                        [Token.Number, f"Suggestions: {line}"]
+                    )
                 )
+                # print(
+                #     "{}Suggestions:{} {}".format(cs[token.NUMBER], cs["normal"], line)
+                # )
 
                 shell.execution_count += 1
                 shell.run_cell(line, store_history=True)
