@@ -17,7 +17,7 @@ import time
 from collections import defaultdict
 from threading import Thread
 from inspect import isclass
-from pygments import Token
+from pygments import token
 
 from IPython.utils import PyColorize
 from IPython import get_ipython
@@ -203,6 +203,11 @@ if __name__ != "__main__":
     def suggestion(arg):
         global _symbols_last
         args = parse_argstring(suggestion, arg)
+
+        if not _symbols_last:
+            print("No suggestions available.")
+            return
+
         if -len(_symbols_last) < args.suggestion_index < len(_symbols_last):
             method, line = _symbols_last[args.suggestion_index]
             if method == "exec":
@@ -214,12 +219,9 @@ if __name__ != "__main__":
                     pass
                 print(
                     PyColorize.theme_table[shell.colors].format(
-                        [Token.Number, f"Suggestions: {line}"]
+                        [(token.Number, f"Suggestions: {line}")]
                     )
                 )
-                # print(
-                #     "{}Suggestions:{} {}".format(cs[token.NUMBER], cs["normal"], line)
-                # )
 
                 shell.execution_count += 1
                 shell.run_cell(line, store_history=True)
