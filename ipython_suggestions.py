@@ -179,7 +179,7 @@ if __name__ != "__main__":
                     sys.stdout._raw = True
                 except AttributeError:
                     pass
-                cs = PyColorize.Parser().color_table[shell.colors].colors
+                cs = PyColorize.Parser(theme_name="linux").color_table[shell.colors].colors
                 print(
                     "{}Suggestions:{} {}".format(cs[token.NUMBER], cs["normal"], line)
                 )
@@ -213,7 +213,7 @@ if __name__ != "__main__":
                     sys.stdout._raw = True
                 except AttributeError:
                     pass
-                cs = PyColorize.Parser().color_table[shell.colors].colors
+                cs = PyColorize.Parser(theme_name="linux").color_table[shell.colors].colors
                 print(
                     "{}Suggestions:{} {}".format(cs[token.NUMBER], cs["normal"], line)
                 )
