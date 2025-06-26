@@ -4,7 +4,7 @@ from setuptools import setup
 if __name__ == "__main__":
     setup(
         name="ipython-suggestions",
-        version="1.0.2",
+        version="1.0.3",
         description="Get suggestions on misspelled names, and do system wide symbol searching.",
         long_description=open("README.md").read(),
         long_description_content_type='text/markdown',

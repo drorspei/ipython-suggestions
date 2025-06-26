@@ -13,15 +13,11 @@ import traceback
 import string
 import itertools
 import bisect
-import time
 from collections import defaultdict
 from threading import Thread
 from inspect import isclass
-import token
 
-from IPython.utils import PyColorize
 from IPython import get_ipython
-from IPython.display import display
 from IPython.core.magic import register_line_magic
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 
@@ -179,9 +175,8 @@ if __name__ != "__main__":
                     sys.stdout._raw = True
                 except AttributeError:
                     pass
-                cs = PyColorize.Parser(theme_name="linux").color_table[shell.colors].colors
                 print(
-                    "{}Suggestions:{} {}".format(cs[token.NUMBER], cs["normal"], line)
+                    "Suggestions: {}".format(line)
                 )
 
                 shell.execution_count += 1
@@ -213,9 +208,8 @@ if __name__ != "__main__":
                     sys.stdout._raw = True
                 except AttributeError:
                     pass
-                cs = PyColorize.Parser(theme_name="linux").color_table[shell.colors].colors
                 print(
-                    "{}Suggestions:{} {}".format(cs[token.NUMBER], cs["normal"], line)
+                    "Suggestions: {}".format(line)
                 )
 
                 shell.execution_count += 1
